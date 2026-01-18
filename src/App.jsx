@@ -46,14 +46,20 @@ const loadScript = (src, id) => {
 };
 
 export default function App() {
-    // --- KONFIGURASI API KEY (Safe Mode) ---
-    // Di Vercel, Environment Variable diakses lewat: import.meta.env.VITE_GEMINI_API_KEY
-    // Tapi di preview ini, sintaks itu bisa error. Jadi kita pakai string kosong dulu.
-    // SAAT DI VERCEL NANTI, UNCOMMENT BARIS DI BAWAH INI:
-    // const envApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-    const envApiKey = ''; // Placeholder aman untuk preview
+    // --- KONFIGURASI API KEY ---
+    // Menggunakan variabel environment dari Vercel
+    // Pastikan di dashboard Vercel > Settings > Environment Variables sudah ada VITE_GEMINI_API_KEY
+    let envApiKey = '';
+    try {
+        // Kita gunakan try-catch agar aman jika dijalankan di environment non-Vite standar
+        if (import.meta && import.meta.env) {
+            envApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+        }
+    } catch (e) {
+        console.log("Info: Menjalankan di mode tanpa env var build time.");
+    }
     
-    const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || envApiKey);
+    // Kita tidak lagi menggunakan state untuk input manual user
     const [loading, setLoading] = useState(false);
     const [generatedData, setGeneratedData] = useState(null);
     const [activeTab, setActiveTab] = useState('utama'); 
@@ -90,20 +96,16 @@ export default function App() {
         loadLibraries();
     }, []);
 
-    const handleApiKeyChange = (e) => {
-        const val = e.target.value;
-        setApiKey(val);
-        localStorage.setItem('gemini_api_key', val);
-    };
-
     const handleGenerate = async () => {
-        // Cek key dari state atau fallback
-        const currentKey = apiKey; 
+        // Langsung gunakan key dari Env Variable
+        const currentKey = envApiKey; 
 
         if (!currentKey) {
-            alert("Masukkan API Key Gemini dulu ya, Pak/Bu Guru!");
+            // Pesan error ini hanya akan muncul jika Admin lupa setting di Vercel
+            alert("Sistem belum dikonfigurasi. Admin: Mohon set VITE_GEMINI_API_KEY di Vercel.");
             return;
         }
+        
         if (!formData.mapel || !formData.topik) {
             alert("Mohon lengkapi Mata Pelajaran dan Topik.");
             return;
@@ -417,18 +419,10 @@ export default function App() {
             </header>
 
             <main className="max-w-5xl mx-auto px-4 mt-8">
-                {/* API Key Input - Tampilkan jika ENV kosong dan LocalStorage kosong */}
-                {(!apiKey && !envApiKey) && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded shadow-sm">
-                        <div className="flex gap-3">
-                            <Icons.AlertCircle className="text-yellow-600 flex-shrink-0" />
-                            <div>
-                                <p className="font-bold text-yellow-800">API Key Diperlukan</p>
-                                <input type="password" placeholder="Paste API Key di sini..." className="w-full p-2 border border-yellow-300 rounded mt-1" onChange={handleApiKeyChange} />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* INPUT API KEY DIHAPUS
+                   Karena sudah pakai Environment Variable Vercel.
+                   Tampilan jadi lebih bersih untuk User.
+                */}
 
                 <div className="grid md:grid-cols-3 gap-6">
                     {/* Panel Kiri */}
